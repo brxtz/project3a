@@ -1,7 +1,6 @@
 '''
 This web service extends the Alphavantage api by creating a visualization module, 
 converting json query results retuned from the api into charts and other graphics. 
-
 This is where you should add your code to function query the api
 '''
 import requests
@@ -10,8 +9,20 @@ from datetime import date
 import pygal
 
 
-def Get_Stock_API(API,TimeSeries):
-    url = "https://www.alphavantage.co/query?function="+TimeSeries+"&symbol="+API+"&outputsize=full&interval=30min&apikey=RZM5VGNEZOCKLLTT"
+def Get_Stock_API(StockSymbol,TimeSeries):
+
+    #Convert Time Series number into str for api to use
+    TimeSeries = int(TimeSeries)
+    if(TimeSeries == 1):
+        function = "TIME_SERIES_INTRADAY"
+    elif(TimeSeries == 2):
+        function = "TIME_SERIES_DAILY_ADJUSTED"
+    elif(TimeSeries == 3):
+        function = "TIME_SERIES_WEEKLY"
+    elif(TimeSeries == 4):
+        function = "TIME_SERIES_MONTHLY"
+
+    url = "https://www.alphavantage.co/query?function="+function+"&symbol="+StockSymbol+"&outputsize=full&interval=30min&apikey=RZM5VGNEZOCKLLTT"
 
     r = requests.get(url).json()
     return r
@@ -20,108 +31,25 @@ def Get_Stock_API(API,TimeSeries):
 def convert_date(str_date):
     return datetime.strptime(str_date, '%Y-%m-%d').date()
 
+def GenerateChart(symbol,chart_type,time_series,start_date,end_date):
+    data = Get_Stock_API(symbol,time_series)
 
-def getTimeSeries():
-    while(True):
-            try:
-                print("Select the Time Series of the chart you want to Generate")
-                print("--------------------------------------------------------")
-                print("1. Intraday")
-                print("2. Daily")
-                print("3. Weekly")
-                print("4. Monthly")
-                timeSeries = int(input("Enter time series option (1, 2, 3, 4): "))
-            except ValueError:
-                print("The value you entered is invalid. Only numerical values are valid. \n")
-            if(timeSeries > 4 or timeSeries < 0):
-                print("Please Enter a number between 1 and 4 for selection \n")
-            else:
-                break
-    if(timeSeries == 1):
-        return "TIME_SERIES_INTRADAY"
-    elif(timeSeries == 2):
-        return "TIME_SERIES_DAILY"
-    elif(timeSeries == 3):
-        return "TIME_SERIES_WEEKLY"
-    else:
-        return "TIME_SERIES_MONTHLY"
-def getChartType():
-    while(True):
-            try:
-                print("Chart Types")
-                print("-----------")
-                print("1. Bar")
-                print("2. Line")
-                chartType = int(input("Enter the chart type you want: (Bar (1), Line (2)): "))
-            except ValueError:
-                print("The value you entered is invalid. Only numerical values are valid. \n")
-            if(chartType > 2 or chartType < 0):
-                print("Please Enter 1 or 2 for selection \n")
-            else:
-                break
-    return chartType
-def setDates(dateparams):
-    while(True):
-        try:
-            date1 = input("Enter the start Date (YYYY-MM-DD): ")
-            date2 = input("Enter the end Date (YYYY-MM-DD): ")
+    TimeDateList = []
+    OpenList = []
+    HighList = []
+    LowList = []
+    CloseList = []
 
-            broke1 = date1.split('-')
-            broke2 = date2.split('-')
-
-            DATE1 = datetime.date(int(broke1[0]),int(broke1[1]),int(broke1[2]))
-            DATE2 = datetime.date(int(broke2[0]),int(broke2[1]),int(broke2[2]))
-            dateparams = [[date1,date2],[int(broke1[0]),int(broke1[1]),int(broke1[2])],[int(broke2[0]),int(broke2[1]),int(broke2[2])]]
-            if(DATE2 < DATE1):
-                print("Dates entered incorrectly")
-            else:
-                #print(dateparams)
-                #print(date1+date2)
-                return dateparams
-        except ValueError:
-            print("Dates Entered Incorrectly, Make sure the Format is correct.")
-
-
-def main():
-    while(True):
-        dateparams = [[],[],[]]
-        
-        dateparams = setDates(dateparams)
-        #print(dateparams)
-        API = getStockName()
-        ChartType = getChartType()
-        TimeSeries = getTimeSeries()
-        data = Get_Stock_API(API, TimeSeries)
-        #print(data)
-        #print(data['Time Series (5min)']['2022-10-24 20:00:00'])
-        DateTimeList = []
-        TimeDateList = []
-        DateFilter=[]
-        Timelist = []
-        OpenList = []
-        HighList = []
-        LowList = []
-        CloseList = []
-        count=0
-        if(TimeSeries == "TIME_SERIES_INTRADAY"): 
-            for i in data['Time Series (30min)']:
-                DateFilter.append(i.split(' ')[0])
-                year = (int(DateFilter[count].split('-')[0]))
-                month =(int(DateFilter[count].split('-')[1]))
-                day =(int(DateFilter[count].split('-')[2]))
-                count+=1
-                ParamStart = datetime.date(int(dateparams[1][0]),int(dateparams[1][1]),int(dateparams[1][2]))
-                ParamEnd = datetime.date(int(dateparams[2][0]),int(dateparams[2][1]),int(dateparams[2][2]))
-                CurrentDate =datetime.date(year,month,day)
-                if((CurrentDate>=ParamStart)&(CurrentDate<=ParamEnd)):
-                    Timelist.append(i)
-                    DateTimeList.append(i.split(' ')[0])
-                    TimeDateList.append(i.split(' ')[1])
-            for t in Timelist:
-                OpenList.append(float(data['Time Series (30min)'][t]['1. open']))
-                HighList.append(float(data['Time Series (30min)'][t]['2. high']))
-                LowList.append(float(data['Time Series (30min)'][t]['3. low']))
-                CloseList.append(float(data['Time Series (30min)'][t]['4. close']))
+    if(time_series == '1'): 
+        for i in data['Time Series (30min)']:
+            current_date = convert_date(i[:10])
+            if((current_date>=start_date)&(current_date<=end_date)):
+                OpenList.append(float(data['Time Series (30min)'][i]['1. open']))
+                HighList.append(float(data['Time Series (30min)'][i]['2. high']))
+                LowList.append(float(data['Time Series (30min)'][i]['3. low']))
+                CloseList.append(float(data['Time Series (30min)'][i]['4. close']))
+                
+        '''
         elif(TimeSeries == "TIME_SERIES_DAILY"):
             for i in data['Time Series (Daily)']:
                 DateFilter.append(i.split(' ')[0])
@@ -175,29 +103,24 @@ def main():
                 OpenList.append(float(data['Monthly Time Series'][t]['1. open']))
                 HighList.append(float(data['Monthly Time Series'][t]['2. high']))
                 LowList.append(float(data['Monthly Time Series'][t]['3. low']))
-                CloseList.append(float(data['Monthly Time Series'][t]['4. close']))        
+                CloseList.append(float(data['Monthly Time Series'][t]['4. close']))
+                '''        
 
-        if(ChartType == 2):
-            line_chart = pygal.Line()
-            line_chart.title = "Stock Data for " + API +": " + dateparams[0][1] + " to " + dateparams[0][0]
-            line_chart.x_labels = TimeDateList
-            line_chart.add("Open", OpenList)
-            line_chart.add("High", HighList)
-            line_chart.add("Low", LowList)
-            line_chart.add("Close", CloseList)
-            line_chart.render_in_browser()
-        else:
-            bar_chart = pygal.Bar()
-            bar_chart.title = "Stock Data for " + API +": " + dateparams[0][1] + " to " + dateparams[0][0]
-            bar_chart.x_labels = TimeDateList
-            bar_chart.add("Open", OpenList)
-            bar_chart.add("High", HighList)
-            bar_chart.add("Low", LowList)
-            bar_chart.add("Close", CloseList)
-            bar_chart.render_in_browser()
-
-        ending = str(input("Would you like to continue? Enter y or n: \n"))
-        if ending == "y":
-            continue
-        else:
-            break    
+    if(chart_type == '2'):
+        line_chart = pygal.Line()
+        line_chart.title = "Stock Data for " + symbol +": " + start_date.strftime("%Y-%m-%d") + " to " + end_date.strftime("%Y-%m-%d")
+        line_chart.x_labels = TimeDateList
+        line_chart.add("Open", OpenList)
+        line_chart.add("High", HighList)
+        line_chart.add("Low", LowList)
+        line_chart.add("Close", CloseList)
+        return line_chart.render_data_uri()
+    else:
+        bar_chart = pygal.Bar()
+        bar_chart.title = "Stock Data for " + symbol +": " + start_date.strftime("%Y-%m-%d") + " to " + end_date.strftime("%Y-%m-%d")
+        bar_chart.x_labels = TimeDateList
+        bar_chart.add("Open", OpenList)
+        bar_chart.add("High", HighList)
+        bar_chart.add("Low", LowList)
+        bar_chart.add("Close", CloseList)
+        return bar_chart.render_data_uri()
