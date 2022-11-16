@@ -11,16 +11,25 @@ from wtforms import (
 from datetime import date
 from wtforms.fields.html5 import DateField
 from wtforms.validators import URL, DataRequired, Email, EqualTo, Length
+from datapackage import Package
 
 class StockForm(FlaskForm):
-    """Generate Your Graph."""
+    
+ 
+    package = Package("https://datahub.io/core/nyse-other-listings/datapackage.json")
+    holder = []
+    ApiKeys = []
+
+    for resource in package.resources:
+        if resource.descriptor['datahub']['type'] == 'derived/csv':
+            holder = resource.read()
+
+    for i in holder:
+        ApiKeys.append((i[0],i[0]))
     
     #THIS IS WHERE YOU WILL IMPLEMENT CODE TO POPULATE THE SYMBOL FIELD WITH STOCK OPTIONS
     symbol = SelectField("Choose Stock Symbol",[DataRequired()],
-        choices=[
-            ("IBM", "IBM"),
-            ("GOOGL", "GOOGL"),
-        ],
+        choices = ApiKeys, 
     )
 
     chart_type = SelectField("Select Chart Type",[DataRequired()],

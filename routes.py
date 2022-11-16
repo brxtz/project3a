@@ -22,6 +22,7 @@ def stocks():
             if end_date <= start_date:
                 #Generate error message as pass to the page
                 err = "ERROR: End date cannot be earlier than Start date."
+                err = GenerateChart(symbol,chart_type,time_series,start_date,end_date)
                 chart = None
             else:
                 #query the api using the form data
@@ -29,12 +30,14 @@ def stocks():
                  
                 #THIS IS WHERE YOU WILL CALL THE METHODS FROM THE CHARTS.PY FILE AND IMPLEMENT YOUR CODE
 
+                graph_data = GenerateChart(symbol,chart_type,time_series,start_date,end_date)
+                chart = render_template("stock.html", graph_data = graph_data, form=form)
                 
                 
                 
                 
                 #This chart variable is what is passed to the stock.html page to render the chart returned from the api
-                chart = main()
+                chart = GenerateChart(symbol,chart_type,time_series,start_date,end_date)
 
             return render_template("stock.html", form=form, template="form-template", err = err, chart = chart)
     
